@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     # Terceiros
     "rest_framework",
     "corsheaders",
+    "professionals"
 ]
 
 # ---- Middleware ----
