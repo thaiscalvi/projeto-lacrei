@@ -1,7 +1,7 @@
-# core/settings.py
 from pathlib import Path
 import os
 import environ
+from datetime import timedelta
 
 # Caminhos
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -70,7 +70,6 @@ TEMPLATES = [
 WSGI_APPLICATION = "core.wsgi.application"
 
 # ---- Banco de Dados (PostgreSQL pelo docker-compose) ----
-# O .env deve conter DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -92,23 +91,76 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # ---- i18n / tz ----
 LANGUAGE_CODE = "pt-br"
-
-# O desafio sugeria 'UTC'. Se preferir horário local durante o dev:
-# TIME_ZONE = "America/Sao_Paulo"
 TIME_ZONE = "UTC"
-
 USE_I18N = True
 USE_TZ = True
 
 # ---- Static ----
 STATIC_URL = "static/"
-
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # ---- CORS / CSRF ----
-# Leia origens do .env (ex: http://localhost:3000,http://127.0.0.1:3000)
-_raw_cors = env("CORS_ALLOWED_ORIGINS", default="")
-CORS_ALLOWED_ORIGINS = [o.strip() for o in _raw_cors.split(",") if o.strip()]
-
-# Se precisar confiar em origens pro CSRF:
+CORS_ALLOWED_ORIGINS = env.list(
+    "CORS_ALLOWED_ORIGINS",
+    default=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173"
+    ],
+)
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
+
+# ---- DRF / JWT ----
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticatedOrReadOnly",
+    ],
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "20/min",
+        "user": "100/min",
+    },
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+}
+
+# ---- Logging JSON ----
+import sys
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "json": {
+            "()": "pythonjsonlogger.jsonlogger.JsonFormatter",
+            "fmt": "%(asctime)s %(levelname)s %(name)s %(message)s",
+        },
+    },
+    "handlers": {
+        "console_json": {
+            "class": "logging.StreamHandler",
+            "stream": sys.stdout,
+            "formatter": "json",
+        },
+    },
+    "loggers": {
+        "django.request": {
+            "handlers": ["console_json"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+        "": {
+            "handlers": ["console_json"],
+            "level": "INFO",
+        },
+    },
+}
