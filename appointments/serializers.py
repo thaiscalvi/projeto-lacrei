@@ -10,6 +10,9 @@ class AppointmentSerializer(serializers.ModelSerializer):
         fields = ["id", "professional", "professional_nome", "data", "created_at", "updated_at"]
 
     def validate_data(self, value):
-        if value < timezone.now():
-            raise serializers.ValidationError("A data do agendamento não pode estar no passado.")
+        if value is None:
+            raise serializers.ValidationError("A data do agendamento é obrigatória.")
+        # exige data futura (tolerância de 1 minuto)
+        if value < timezone.now() + timezone.timedelta(minutes=1):
+            raise serializers.ValidationError("A data do agendamento deve ser no futuro.")
         return value
